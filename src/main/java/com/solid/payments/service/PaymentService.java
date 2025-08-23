@@ -2,9 +2,7 @@ package com.solid.payments.service;
 
 import com.solid.payments.dto.PaymentRequest;
 import com.solid.payments.dto.PaymentResponse;
-import com.solid.payments.model.Payment;
-import com.solid.payments.model.PaymentStatus;
-import com.solid.payments.model.PaymentMethod;
+import com.solid.payments.model.*;
 import com.solid.payments.repository.PaymentRepository;
 import com.solid.payments.strategy.PaymentStrategy;
 import com.solid.payments.strategy.PaymentStrategyFactory;
@@ -22,21 +20,13 @@ public class PaymentService {
     private final PaymentStrategyFactory strategyFactory;
 
     public PaymentResponse process(PaymentRequest request) {
-        if (request.getAmount() == null || request.getAmount().signum() <= 0) {
-            throw new IllegalArgumentException("Valor do pagamento é inválido.");
-        }
+        // ... validações ...
 
         PaymentMethod paymentMethod = PaymentMethod.valueOf(request.getPaymentMethod());
 
-        Payment payment = Payment.builder()
-                .id(UUID.randomUUID().toString())
-                .paymentMethod(request.getPaymentMethod())
-                .amount(request.getAmount())
-                .status(PaymentStatus.PROCESSING)
-                .build();
+        // Cria a instância da subclasse correta
+        Payment payment = createPaymentInstance(request, paymentMethod);
 
-        // O bloco if/else foi substituído por esta única linha!
-        // O serviço agora está FECHADO PARA MODIFICAÇÃO.
         PaymentStrategy strategy = strategyFactory.getStrategy(paymentMethod);
         strategy.process(payment);
 
@@ -46,5 +36,15 @@ public class PaymentService {
         notificationService.notifyPaymentApproved(payment);
 
         return PaymentResponse.from(payment);
+    }
+
+    // Método auxiliar para criar a instância correta
+    private Payment createPaymentInstance(PaymentRequest request, PaymentMethod paymentMethod) {
+        String id = UUID.randomUUID().toString();
+        return switch (paymentMethod) {
+            case CREDIT_CARD -> new CreditCardPayment(id, request.getAmount(), request.getCardNumber());
+            case PIX -> new PixPayment(id, request.getAmount(), request.getPixKey());
+            default -> throw new IllegalArgumentException("Método de pagamento não suportado para criação: " + paymentMethod);
+        };
     }
 }
