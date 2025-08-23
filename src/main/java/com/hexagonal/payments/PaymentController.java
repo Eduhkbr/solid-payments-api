@@ -15,18 +15,19 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/pagamentos")
-public class PagamentoController {
+public class PaymentController {
 
     @PostMapping
-    public ResponseEntity<String> processar(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<String> process(@RequestBody Map<String, Object> request) {
         try {
             // Extração de dados do request
             String tipo = (String) request.get("tipo");
             BigDecimal valor = new BigDecimal(request.get("valor").toString());
 
-            // VIOLAÇÃO DE TODOS OS PRINCÍPIPIOS SOLID!
+            // VIOLAÇÃO DE TODOS OS PRINCÍPIPIOS SOLID
 
-            // 1. Validação misturada (Violação SRP)
+            // 1. Validação misturada (Violação Single Responsibility Principle)
+            // SRP: Controller fazendo validação (deveria ser responsabilidade de um Validator)
             if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
                 return ResponseEntity.badRequest().body("Valor do pagamento é inválido.");
             }
@@ -34,7 +35,7 @@ public class PagamentoController {
                 return ResponseEntity.badRequest().body("Tipo de pagamento é obrigatório.");
             }
 
-            // 2. Lógica de negócio no controller (Violação SRP e OCP)
+            // 2. Lógica de negócio no controller (Violação Single Responsibility Principle e Open/Closed Principle)
             if (tipo.equals("CARTAO_CREDITO")) {
                 String numeroCartao = (String) request.get("numeroCartao");
                 String cvv = (String) request.get("cvv");
@@ -50,7 +51,8 @@ public class PagamentoController {
                 System.out.println("Validando limite do cartão...");
                 System.out.println("Processando pagamento com Cartão de Crédito no valor de " + valor);
 
-                // 3. Acoplamento com implementação concreta de HTTP Client (Violação DIP)
+                // 3. Acoplamento com implementação concreta de HTTP Client (Violação Dependency Inversion Principle)
+                // DIP: Dependendo de implementação concreta, não de abstração
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest httpRequest = HttpRequest.newBuilder()
                         .uri(URI.create("https://api.gateway.com/charge")) // Gateway Fictício
@@ -83,7 +85,7 @@ public class PagamentoController {
                 return ResponseEntity.badRequest().body("Tipo de pagamento não suportado.");
             }
 
-            // 4. Persistência de dados direto no controller (Violação SRP)
+            // 4. Persistência de dados direto no controller (Violação Single Responsibility Principle)
             String pagamentoId = UUID.randomUUID().toString();
             try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "")) {
                 String sql = "INSERT INTO PAGAMENTOS (ID, TIPO, VALOR, STATUS) VALUES (?, ?, ?, ?)";
@@ -96,7 +98,7 @@ public class PagamentoController {
                 System.out.println("Pagamento salvo no banco de dados com ID: " + pagamentoId);
             }
 
-            // 5. Notificação por e-mail hardcoded (Violação SRP)
+            // 5. Notificação por e-mail hardcoded (Violação Single Responsibility Principle)
             System.out.println("Enviando e-mail de confirmação para o cliente...");
 
             return ResponseEntity.ok("Pagamento processado com sucesso! ID: " + pagamentoId);
@@ -107,13 +109,19 @@ public class PagamentoController {
         }
     }
 
-    // Violação LSP e ISP: Um endpoint de estorno que não se aplica a todos os tipos de pagamento
+    // Violação Liskov Substitution Principle e Interface Segregation Principle:
+    // Um endpoint de estorno que não se aplica a todos os tipos de pagamento
     @PostMapping("/{id}/estorno")
     public ResponseEntity<String> estornar(@PathVariable String id) {
         // Lógica de estorno...
         // Problema: PIX e Boleto não podem ser estornados da mesma forma que um Cartão.
         // O código aqui teria que fazer um "if" no tipo de pagamento para decidir o que fazer,
-        // o que é um sintoma de violação do LSP.
+        // o que é um sintoma de violação do Liskov Substitution Principle.
+        // LSP: Nem todos os tipos de pagamento podem ser estornados da mesma forma
+        // PIX: não permite estorno
+        // Boleto: precisa de cancelamento antes do vencimento
+        // Cartão: permite estorno total
+        // Isso força diferentes comportamentos para o mesmo metodo
         System.out.println("Estornando pagamento com ID: " + id);
         return ResponseEntity.ok("Pagamento estornado com sucesso.");
     }
