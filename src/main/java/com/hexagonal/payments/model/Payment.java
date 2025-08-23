@@ -7,9 +7,9 @@ import java.math.BigDecimal;
 
 @Data
 @Builder
-public class Pagamento {
+public class Payment {
     private String id;
-    private String tipo;
-    private BigDecimal valor;
-    private StatusPagamento status;
+    private String paymentMethod;
+    private BigDecimal amount;
+    private PaymentStatus status;
 }
