@@ -111,7 +111,7 @@ public class PaymentController {
 
     // Violação Liskov Substitution Principle e Interface Segregation Principle:
     // Um endpoint de estorno que não se aplica a todos os tipos de pagamento
-    @PostMapping("/{id}/estorno")
+    @PostMapping("/{id}/refund")
     public ResponseEntity<String> estornar(@PathVariable String id) {
         // Lógica de estorno...
         // Problema: PIX e Boleto não podem ser estornados da mesma forma que um Cartão.
