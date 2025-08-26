@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 // Responsabilidade Única: Lidar com requisições HTTP para pagamentos
 @RestController
-@RequestMapping("/api/pagamentos")
+@RequestMapping("/api/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
