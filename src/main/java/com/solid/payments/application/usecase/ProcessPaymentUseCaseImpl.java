@@ -1,52 +1,50 @@
-package com.solid.payments.service;
+package com.solid.payments.application.usecase;
 
+import com.solid.payments.domain.port.in.ProcessPaymentUseCase;
+import com.solid.payments.domain.port.out.NotificationPort;
+import com.solid.payments.domain.port.out.PaymentRepositoryPort;
 import com.solid.payments.dto.PaymentRequest;
 import com.solid.payments.dto.PaymentResponse;
 import com.solid.payments.model.*;
-import com.solid.payments.repository.PaymentRepository;
+import com.solid.payments.strategy.PaymentStrategy;
+import com.solid.payments.strategy.PaymentStrategyFactory;
 import com.solid.payments.validation.PaymentValidator;
 import com.solid.payments.validation.ValidatorFactory;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-// O antigo PaymentService agora é um orquestrador.
-// Sua função é coordenar os diferentes componentes (validadores, processadores, etc.).
 @Service
 @RequiredArgsConstructor
-public class PaymentOrchestratorService {
+public class ProcessPaymentUseCaseImpl implements ProcessPaymentUseCase {
 
-    private final PaymentRepository paymentRepository;
-    private final NotificationService notificationService;
-    private final PaymentProcessorService paymentProcessor; // Depende do novo serviço focado
-    private final ValidatorFactory validatorFactory; // Depende da nova Factory de validadores
+    // A camada de aplicação depende das PORTAS, não das implementações concretas.
+    private final PaymentRepositoryPort paymentRepository;
+    private final NotificationPort notificationPort;
+    private final PaymentStrategyFactory strategyFactory;
+    private final ValidatorFactory validatorFactory;
 
+    @Override
+    @Transactional
     public PaymentResponse processPayment(PaymentRequest request) {
-        // 1. Validação genérica
-        if (request.getAmount() == null || request.getAmount().signum() <= 0) {
-            throw new IllegalArgumentException("Valor do pagamento é inválido.");
-        }
+        // ... Lógica de validação e orquestração ...
         PaymentMethod paymentMethod = PaymentMethod.valueOf(request.getPaymentMethod());
 
-        // 2. Validação específica (usando a Factory de validadores)
         PaymentValidator validator = validatorFactory.getValidator(paymentMethod);
         if (validator != null) {
             validator.validate(request);
         }
 
-        // 3. Criação da entidade
         Payment payment = createPaymentInstance(request, paymentMethod);
 
-        // 4. Delega o processamento para o serviço específico
-        paymentProcessor.process(payment);
+        PaymentStrategy strategy = strategyFactory.getStrategy(paymentMethod);
+        strategy.process(payment);
         payment.setStatus(PaymentStatus.APPROVED);
 
-        // 5. Persistência
         paymentRepository.save(payment);
-
-        // 6. Notificação
-        notificationService.notifyPaymentApproved(payment);
+        notificationPort.notifyPaymentApproved(payment);
 
         return PaymentResponse.from(payment);
     }

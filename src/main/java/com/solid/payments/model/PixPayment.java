@@ -1,17 +1,11 @@
 package com.solid.payments.model;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-// Subclasse concreta para PIX.
-// NÃO implementa Refundable, respeitando o LSP.
-@Entity
-@DiscriminatorValue("PIX")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor

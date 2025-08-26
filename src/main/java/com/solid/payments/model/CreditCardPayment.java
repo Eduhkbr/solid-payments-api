@@ -1,7 +1,5 @@
 package com.solid.payments.model;
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -10,16 +8,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-// Subclasse concreta para Cartão de Crédito.
-// Implementa a interface Refundable.
-@Entity
-@DiscriminatorValue("CREDIT_CARD")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class CreditCardPayment extends Payment implements Refundable {
 
-    private String cardNumber; // Apenas para exemplo
+    private String cardNumber;
 
     public CreditCardPayment(String id, BigDecimal amount, String cardNumber) {
         super(id, amount);
