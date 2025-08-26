@@ -1,5 +1,6 @@
 package com.solid.payments.application.usecase;
 
+import com.solid.payments.domain.port.exception.PaymentNotFoundException;
 import com.solid.payments.domain.port.in.ProcessRefundUseCase;
 import com.solid.payments.domain.port.out.PaymentRepositoryPort;
 import com.solid.payments.model.Payment;
@@ -20,7 +21,7 @@ public class ProcessRefundUseCaseImpl implements ProcessRefundUseCase {
     @Transactional
     public void processRefund(String paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new EntityNotFoundException("Pagamento não encontrado com ID: " + paymentId));
+                .orElseThrow(() -> new PaymentNotFoundException(paymentId));
 
         if (!(payment instanceof Refundable refundablePayment)) {
             throw new UnsupportedOperationException("Este tipo de pagamento não pode ser estornado: " + payment.getPaymentMethod());
