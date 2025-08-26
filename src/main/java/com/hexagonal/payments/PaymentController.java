@@ -21,8 +21,8 @@ public class PaymentController {
     public ResponseEntity<String> process(@RequestBody Map<String, Object> request) {
         try {
             // Extração de dados do request
-            String tipo = (String) request.get("tipo");
-            BigDecimal valor = new BigDecimal(request.get("valor").toString());
+            String tipo = (String) request.get("paymentMethod");
+            BigDecimal valor = new BigDecimal(request.get("amount").toString());
 
             // VIOLAÇÃO DE TODOS OS PRINCÍPIPIOS SOLID
 
@@ -36,8 +36,8 @@ public class PaymentController {
             }
 
             // 2. Lógica de negócio no controller (Violação Single Responsibility Principle e Open/Closed Principle)
-            if (tipo.equals("CARTAO_CREDITO")) {
-                String numeroCartao = (String) request.get("numeroCartao");
+            if (tipo.equals("CREDIT_CARD")) {
+                String numeroCartao = (String) request.get("cardNumber");
                 String cvv = (String) request.get("cvv");
 
                 // Validação de cartão inline
@@ -71,7 +71,7 @@ public class PaymentController {
 
 
             } else if (tipo.equals("PIX")) {
-                String chavePix = (String) request.get("chavePix");
+                String chavePix = (String) request.get("pixKey");
                 if (chavePix == null || chavePix.isBlank()) {
                     return ResponseEntity.badRequest().body("Chave PIX é obrigatória.");
                 }
@@ -88,13 +88,13 @@ public class PaymentController {
             // 4. Persistência de dados direto no controller (Violação Single Responsibility Principle)
             String pagamentoId = UUID.randomUUID().toString();
             try (Connection conn = DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "")) {
-                String sql = "INSERT INTO PAGAMENTOS (ID, TIPO, VALOR, STATUS) VALUES (?, ?, ?, ?)";
+                String sql = "INSERT INTO PAYMENTS (ID, PAYMENT_TYPE, AMOUNT, STATUS, CREATED_AT) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement stmt = conn.prepareStatement(sql);
                 stmt.setString(1, pagamentoId);
                 stmt.setString(2, tipo);
                 stmt.setBigDecimal(3, valor);
                 stmt.setString(4, "APROVADO");
-                stmt.executeUpdate();
+                stmt.setTimestamp(5, new java.sql.Timestamp(System.currentTimeMillis()));                stmt.executeUpdate();
                 System.out.println("Pagamento salvo no banco de dados com ID: " + pagamentoId);
             }
 
